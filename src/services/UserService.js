@@ -1,4 +1,4 @@
-import BaseService from "./baseService";
+import BaseService from "./BaseService";
 
 class UserService extends BaseService{
 

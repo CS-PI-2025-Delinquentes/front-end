@@ -9,7 +9,7 @@ import { SectionBox } from "@/components";
 import { CloudinaryImage } from "@/components/CloudinaryImage.jsx";
 import { cpf, cnpj } from 'cpf-cnpj-validator';
 import { localStorageUtils } from "../../utils/localStorageUtils";
-import AuthService from "../../services/authService";
+import AuthService from "../../services/AuthService";
 import Cookies from 'js-cookie';
 import { toast, Toaster } from "sonner";
 
@@ -105,7 +105,7 @@ export function LoginPage() {
 
 }
 
-function FormField({ title, placeholder, register, name, error, dirty, type = "text", icon: Icon, onChangeMask, autoComplete = "off" }) {
+function FormField({ title, placeholder, register, name, error, type = "text", icon: Icon, onChangeMask, autoComplete = "off" }) {
   let status;
   if (error) {
     status = error ? "error" : "default"
