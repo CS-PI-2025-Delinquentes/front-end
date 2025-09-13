@@ -1,7 +1,7 @@
 import { SectionBox } from "@/components"
 import { Button, ButtonText, Image, InputRoot, InputField, InputIcon, InputLabel, InputMessage, Shape } from "@/components";
 import { Eye, EyeSlash, UserList, Phone, EnvelopeSimple, LockSimpleOpen, CheckCircle, HouseLine } from "phosphor-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,8 +9,8 @@ import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox"
 import { cpf, cnpj } from 'cpf-cnpj-validator';
 import { CloudinaryImage } from "@/components/CloudinaryImage.jsx";
-import UserService from "../../services/UserService";
 import { toast, Toaster } from "sonner";
+import UserService from "../../services/UserService";
 
 export function SignUpPage() {
   const [data, setData] = useState("Dados do Formulario em JSON");
@@ -30,11 +30,27 @@ export function SignUpPage() {
     handleSubmit,
     setError,
     clearErrors,
+    watch,
+    trigger,
     formState: { errors, touchedFields, isValid }
   } = useForm({
     resolver: zodResolver(schema),
     mode: "onBlur"
   });
+  const password = watch("password");
+  const confirmPassword = watch("confirmPassword");
+
+  useEffect(() => {
+    if (password && password.length > 0) {
+      trigger("confirmPassword");
+    }
+  }, [password, trigger])
+
+  useEffect(() => {
+    if (confirmPassword && confirmPassword.length > 0) {
+      trigger("confirmPassword");
+    }
+  }, [confirmPassword, trigger])
 
   const handleChangedPerson = (business) => {
     clearErrors();
@@ -44,7 +60,7 @@ export function SignUpPage() {
   }
 
   const postForm = async (formData) => {
-    if(isWainting) return;
+    if (isWainting) return;
     setIsWainting(true);
     setData({ ...formData });
     console.log("JSON enviado:", formData);
@@ -52,7 +68,7 @@ export function SignUpPage() {
     try {
       const resposta = isBusiness ? await userService.createBusiness(formData) : await userService.createClient(formData);
       console.log(resposta);
-      
+
       if (resposta.status === 200) {
         setShowSuccessModal(true);
       }
@@ -83,7 +99,7 @@ export function SignUpPage() {
   return (
     <>
       <SectionBox>
-        <CloudinaryImage publicId="vfq6dw8u2de9vcybxvka" className="w-64 justify-self-center"/>
+        <CloudinaryImage publicId="vfq6dw8u2de9vcybxvka" className="w-64 justify-self-center" />
         <h4 className="justify-self-center cursor-default">Crie sua conta!</h4>
         <div className="grid grid-cols-2 gap-4 py-6">
           <p className="font-bold col-span-2 cursor-default">Escolha uma opção</p>
@@ -121,7 +137,7 @@ export function SignUpPage() {
             Entre aqui
           </Link>
         </div>
-        <Toaster position="top-right" richColors/>
+        <Toaster position="top-right" richColors />
       </SectionBox>
 
       {showAllertModal && (
@@ -400,7 +416,13 @@ const personSchema = z.object({
     .refine((val) => /[A-Z]/.test(val), { message: "Deve conter ao menos 1 letra maiúscula" })
     .refine((val) => /[0-9]/.test(val), { message: "Deve conter ao menos 1 número" })
     .refine((val) => /[@#$?]/.test(val), { message: "Deve conter ao menos 1 caractere especial (@, #, $, ?)" }),
-  confirmPassword: z.string().nonempty("Campo obrigatório"),
+
+  confirmPassword: z
+    .string()
+    .nonempty("Campo obrigatório")
+    .refine((val) => /[A-Z]/.test(val), { message: "Deve conter ao menos 1 letra maiúscula" })
+    .refine((val) => /[0-9]/.test(val), { message: "Deve conter ao menos 1 número" })
+    .refine((val) => /[@#$?]/.test(val), { message: "Deve conter ao menos 1 caractere especial (@, #, $, ?)" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -411,7 +433,7 @@ const businessSchema = z.object({
     .string()
     .nonempty("Campo obrigatório")
     .refine((val) => /[A-Za-z]/.test(val), { message: "Deve conter letras" })
-,
+  ,
 
   cnpj: z
     .string()
@@ -437,16 +459,22 @@ const businessSchema = z.object({
     .refine((val) => /[A-Z]/.test(val), { message: "Deve conter ao menos 1 letra maiúscula" })
     .refine((val) => /[0-9]/.test(val), { message: "Deve conter ao menos 1 número" })
     .refine((val) => /[@#$?]/.test(val), { message: "Deve conter ao menos 1 caractere especial (@, #, $, ?)" }),
-  confirmPassword: z.string().nonempty("Campo obrigatório"),
+
+  confirmPassword: z
+    .string()
+    .nonempty("Campo obrigatório")
+    .refine((val) => /[A-Z]/.test(val), { message: "Deve conter ao menos 1 letra maiúscula" })
+    .refine((val) => /[0-9]/.test(val), { message: "Deve conter ao menos 1 número" })
+    .refine((val) => /[@#$?]/.test(val), { message: "Deve conter ao menos 1 caractere especial (@, #, $, ?)" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
 });
 
 function maskInput(value, field) {
-    if (field === "name") {
+  if (field === "name") {
     return value.replace(/[^A-Za-zÀ-ÿ\s]/g, '');
-    }
+  }
 
   const onlyDigits = value.replace(/\D/g, '');
 
