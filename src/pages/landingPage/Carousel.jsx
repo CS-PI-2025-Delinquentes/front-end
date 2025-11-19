@@ -34,7 +34,7 @@ export function CarouselPlugin() {
       <CarouselContent>
         {aboutImages.map((src, index) => (
           <CarouselItem key={index} className="p-2 m-0">
-            <div className="w-full xs:h-[300px] flex items-center justify-center bg-transparent rounded-2xl overflow-hidden">
+            <div className="w-full xs:h-[450px] flex items-center justify-center bg-transparent rounded-2xl overflow-hidden">
               <CloudinaryImage
                 key={src}
                 publicId={src}
@@ -45,9 +45,31 @@ export function CarouselPlugin() {
           </CarouselItem>
         ))}
       </CarouselContent>
-      <div className="bg-white hidden md:block">
-        <CarouselPrevious className="cursor-pointer" />
-        <CarouselNext className="cursor-pointer" />
+      <div className="hidden md:block">
+        <CarouselPrevious
+          className="
+            left-3 
+            bg-black/40 hover:bg-black/60 
+            text-white
+            rounded-full 
+            p-2
+            shadow-lg
+            border border-white/20
+            cursor-pointer
+          "
+        />
+        <CarouselNext
+          className="
+            right-3 
+            bg-black/40 hover:bg-black/60 
+            text-white
+            rounded-full 
+            p-2
+            shadow-lg
+            border border-white/20
+            cursor-pointer
+          "
+        />
       </div>
     </Carousel>
   )

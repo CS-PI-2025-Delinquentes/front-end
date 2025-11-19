@@ -1,26 +1,13 @@
-import { ButtonText, Image, InputRoot, InputField, InputIcon, InputLabel, InputMessage, SectionApp, AppHeader, Shape } from "@/components";
+import { ButtonText, SectionApp, AppHeader } from "@/components";
 import * as React from "react";
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -30,124 +17,96 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {Button} from "@/components/ui/button"
-import { X } from "phosphor-react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight } from "phosphor-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import RouteService from "../../../services/RouteService";
+import { toast, Toaster } from "sonner";
+
 export function ServicedRoutes() {
   return (
     <>
       <SectionApp>
-            <AppHeader screenTitle="Rotas atendidas"/>
-            <DataTableDemo/>
+        <AppHeader screenTitle="Rotas atendidas" />
+        <RoutesDataTable />
+        <Toaster position="top-right" richColors />
       </SectionApp>
     </>
   );
 }
 
-const data = [
+const getColumns = () => [
   {
-    id: "m5gr84i9",
-    amount: 10,
-    status: "success",
-    email: "ken99@example.com",
-    cancelar: "X"
+    accessorKey: "cidade",
+    header: "Cidade",
+    cell: ({ row }) => <div className="capitalize">{row.getValue("cidade")}</div>,
   },
   {
-    id: "3u1reuv4",
-    amount: 242,
-    status: "success",
-    email: "Abe45@example.com",
-  },
-  {
-    id: "derv1ws0",
-    amount: 837,
-    status: "processing",
-    email: "Monserrat44@example.com",
-  },
-  {
-    id: "5kma53ae",
-    amount: 874,
-    status: "success",
-    email: "Silas22@example.com",
-  },
-  {
-    id: "bhqecj4p",
-    amount: 721,
-    status: "failed",
-    email: "carmella@example.com",
+    accessorKey: "estado",
+    header: "Estado",
+    cell: ({ row }) => <div className="capitalize">{row.getValue("estado")}</div>,
   },
 ];
 
-const columns = [
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("status")}</div>
-    ),
-  },
-  {
-    accessorKey: "email",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Email
-        <ArrowUpDown />
-      </Button>
-    ),
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
-  },
-  {
-    accessorKey: "amount",
-    header: () => <div className="">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount);
-
-      return <div className=" font-medium">{formatted}</div>;
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Cancelar
-        
-      </Button>),
-    cell: ({ row }) => {
-      const payment = row.original;
-
-      return (
-            <Button variant="secondary" className="h-8 w-8 p-0 hover:cursor-pointer">
-              <X />
-            </Button>
-  
-      );
-    },
-  },
-];
-
-function DataTableDemo() {
+function RoutesDataTable() {
   const [sorting, setSorting] = React.useState([]);
   const [columnFilters, setColumnFilters] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [tableData, setTableData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setColumnVisibility({
+      estado: !isMobile,
+    });
+  }, [isMobile]);
+
+  const routeService = React.useMemo(() => new RouteService(), []);
+
+  const loadRoutes = React.useCallback(async (page) => {
+    setLoading(true);
+    try {
+      const response = await routeService.findAll(page);
+      if (response.data) {
+        setCurrentPage(response.data.number || 0);
+        setTotalPages(response.data.totalPages || 1);
+
+        const mappedData = response.data.content.map(route => ({
+          id: route.id,
+          cidade: route.nome,
+          estado: route.estado?.uf || "Paraná",
+        }));
+
+        setTableData(mappedData);
+      } else {
+        setTableData([]);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar rotas:", error);
+      toast.error("Erro ao carregar rotas");
+      setTableData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [routeService]);
+
+  useEffect(() => {
+    loadRoutes(0);
+  }, [loadRoutes]);
+
+  const columns = getColumns();
 
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -158,25 +117,33 @@ function DataTableDemo() {
       columnVisibility,
       rowSelection,
     },
+    initialState: {
+      sorting: [
+        {
+          id: "cidade",
+          desc: false,
+        },
+      ],
+      manualPagination: true,
+      pageCount: totalPages,
+    },
   });
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-      </div>
+    <div className="w-full pt-5">
       <div className="rounded-md border">
         <Table>
-          <TableHeader >
+          <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} >
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
-                  <TableHead key={header.id} className="text-center">
+                  <TableHead key={header.id} className="text-center font-bold">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -185,9 +152,10 @@ function DataTableDemo() {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
-                <TableRow className="text-center"
+                <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="text-center"
                 >
                   {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id}>
@@ -202,7 +170,7 @@ function DataTableDemo() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {loading ? "Carregando..." : "Nenhuma cidade atendida no momento."}
                 </TableCell>
               </TableRow>
             )}
@@ -214,22 +182,27 @@ function DataTableDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => {
+              const prev = Math.max(0, currentPage - 1);
+              loadRoutes(prev);
+            }}
+            disabled={currentPage <= 0}
           >
-            Previous
+            <ArrowLeft />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => {
+              const next = Math.min(totalPages - 1, currentPage + 1);
+              loadRoutes(next);
+            }}
+            disabled={currentPage >= totalPages - 1}
           >
-            Next
+            <ArrowRight />
           </Button>
         </div>
       </div>
-
     </div>
   );
 }

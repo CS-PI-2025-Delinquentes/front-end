@@ -6,8 +6,8 @@ class AuthService extends BaseService{
         super("/auth");
     }
 
-    async login(dados){
-        const resposta = this.api.post(`${this.endPoint}/login`, dados);
+    async login(data){
+        const resposta = this.api.post(`${this.endPoint}/login`, data);
         return resposta;
     }
 }

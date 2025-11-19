@@ -9,14 +9,25 @@ import {
 } from "@/components/ui/carousel"
 import { Star, UserCircle } from "phosphor-react";
 import { useEffect, useState } from "react";
+import ReviewService from "@/services/ReviewService";
 
 export function Reviews() {
   const [reviews, setReviews] = useState([]);
+  const reviewService = new ReviewService();
 
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/CS-PI-2025-Delinquentes/json-end/refs/heads/main/reviews.json').
-      then(data => data.json()).
-      then(data => setReviews(data))
+
+    reviewService.findAllLanding()
+      .then(response => {
+        const data = response.data.content || [];
+        const formatted = data.map(r => ({
+          nome: r.nomeAvaliador,
+          estrelas: r.nota,
+          comentario: r.descricao
+        }));
+        setReviews(formatted);
+      })
+      .catch(() => setReviews([]));
   }, []);
 
   return (
@@ -44,8 +55,8 @@ export function CarouselSize({ data }) {
           <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/3">
             <div className="p-1">
               <Card>
-                <CardContent className="flex h-55 items-center justify-center p-6">
-                  <div className="flex flex-col">
+                <CardContent className="flex flex-col justify-start min-h-[220px] p-6">
+                  <div className="flex items-center gap-4">
                     <div className="flex items-center gap-4">
                       <UserCircle className="icon w-16 h-16 text-gray-100 " />
                       <div className="flex flex-col">
@@ -66,8 +77,8 @@ export function CarouselSize({ data }) {
         ))}
       </CarouselContent>
       <div className="bg-white hidden md:block">
-        <CarouselPrevious className="cursor-pointer"/>
-        <CarouselNext className="cursor-pointer"/>
+        <CarouselPrevious className="cursor-pointer" />
+        <CarouselNext className="cursor-pointer" />
       </div>
     </Carousel>
   )

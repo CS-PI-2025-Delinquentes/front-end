@@ -1,4 +1,4 @@
-import { Button, ButtonText, Image, InputRoot, InputField, InputIcon, InputLabel, InputMessage, SectionApp, Shape, AppHeader,ModalSm } from "@/components";
+import { Button, ButtonText, Image, InputRoot, InputField, InputIcon, InputLabel, InputMessage, SectionApp, Shape, AppHeader, ModalSm } from "@/components";
 import { Eye, EyeSlash, UserList, LockSimpleOpen, CheckCircle, Star, Package, HouseLine, StarHalf, StarFour, FolderSimpleStar } from "phosphor-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { useNavigate } from 'react-router-dom';
+import ReviewService from "../../../services/ReviewService";
 
 export function Review() {
   const {
@@ -21,6 +22,8 @@ export function Review() {
 
   const navigate = useNavigate();
 
+  const reviewService = new ReviewService();
+
   const [isModalSmOpen, setIsModalSmOpen] = useState(false);
   const avaliacao = watch("avaliacao", "");
   const rating = watch('rating', 0);
@@ -30,36 +33,33 @@ export function Review() {
   }
 
   const onError = (errors) => {
-  if (errors.rating) {
-    toast.warning("Selecione entre 1 e 5 estrelas.");
-  }
-};
-
-  const onSubmit = (values) => {
-    
-    const newReview = {...values, timestamp: new Date().toISOString};
-    const existingReviews=localStorage.getItem("jsonReview");
-    let allReviews= [];
-    if (existingReviews){
-      const parsedReviews = JSON.parse(existingReviews);
-      if(Array.isArray(parsedReviews)){
-        allReviews = parsedReviews;
-      } else{
-        allReviews = [];
-      }
+    if (errors.rating) {
+      toast.warning("Selecione entre 1 e 5 estrelas.");
     }
-    allReviews.push(newReview);    
-    const updateReviews = JSON.stringify(allReviews);
-    localStorage.setItem("jsonReview", updateReviews);
-    reset();
-    setIsModalSmOpen(true)
   };
-  
+
+  const onSubmit = async (values) => {
+    try {
+      const newReview = {
+        nota: values.rating,
+        descricao: values.avaliacao
+      };
+
+      await reviewService.insert(newReview);
+
+      reset();
+      setIsModalSmOpen(true);
+    } catch (error) {
+      toast.error("Erro ao enviar avaliação.");
+      console.error("Erro ao salvar avaliação:", error);
+    }
+  };
+
   return (
     <>
       <SectionApp>
         <AppHeader screenTitle="Avaliar" />
-        <Toaster richColors position="top-right"/>
+        <Toaster richColors position="top-right" />
         <div className="max-w-sm sm:max-w-lg mx-auto mt-30" >
           <form onSubmit={handleSubmit(onSubmit, onError)} >
             <div className=" shadow-md p-4 rounded-2xl ">
@@ -89,7 +89,7 @@ export function Review() {
                   {avaliacao.length}/300
                 </span>
               </div>
-              
+
             </div>
             <div className="grid grid-cols-2 gap-2 mt-2 sm:gap-4 sm:mt-4">
               <Link to="/app/home">
@@ -106,7 +106,7 @@ export function Review() {
               </Button>
             </div>
           </form>
-          <ModalView open={isModalSmOpen} onClose={handleCloseModalSm}/>
+          <ModalView open={isModalSmOpen} onClose={handleCloseModalSm} />
 
         </div>
       </SectionApp>
@@ -116,8 +116,8 @@ export function Review() {
 
 
 
-function ModalView({open, onClose}){
-  
+function ModalView({ open, onClose }) {
+
   const navigate = useNavigate();
 
   return (
@@ -140,18 +140,18 @@ function ModalView({open, onClose}){
   )
 }
 
-function FormField({ title,  error, dirty, rating, register,setValue, autoComplete = "off" }) {
+function FormField({ title, error, dirty, rating, register, setValue, autoComplete = "off" }) {
   let status;
   if (dirty) {
     status = error ? "error" : "default"
   }
 
-  
+
   return (
     <>
       <InputLabel className="text-base">{title}</InputLabel>
       <div className="flex gap-1">
-        {[1,2,3,4,5].map((star) => (
+        {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} onClick={() => setValue('rating', star)} className="cursor-pointer transition">
             {star <= rating ? (
               <StarFull />
@@ -162,9 +162,9 @@ function FormField({ title,  error, dirty, rating, register,setValue, autoComple
         ))}
       </div>
       <InputRoot status={status} className="hidden border-0">
-        <InputField  
+        <InputField
           autoComplete={autoComplete}
-          type="hidden" {...register('rating',{required:true})} 
+          type="hidden" {...register('rating', { required: true })}
         />
       </InputRoot>
     </>

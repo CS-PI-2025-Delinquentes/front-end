@@ -52,8 +52,8 @@ export function Settings() {
     <>
       <SectionApp>
             <AppHeader screenTitle="Configurações"/>
-            <div className=" lg:max-w-3xl mx-auto mt-4">
-            <div>
+            <div className=" min-h-screen flex items-center justify-center">
+            <div className="lg:max-w-3xl w-full mt-4">
             <div className="flex items-center">
               <div className=" w-18 h-18 rounded-full  bg-gray-50 flex items-center justify-center text-center mr-3">
                 <Pencil size={42} />

@@ -5,14 +5,14 @@ import { useForm } from "react-hook-form";
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from "react-router-dom";
-import { normalize } from "@/utils/normalize";
-import { localStorageUtils } from "@/utils/localStorageUtils";
 import { fetchCep } from "@/services/cep";
+import BudgetService from "@/services/BudgetService";
+import { toast } from "sonner";
 
 export function Budget() {
     const [showDetails, setShowDetails] = useState(false);
     const [packages, setPackages] = useState([]);
-    const [normalizedCityList, setNormalizedCityList] = useState([]);
+    const [cityList, setCityList] = useState([]);
     const [isAlertModalVisible, setIsAlertModalVisible] = useState(false);
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
     const [isEmptyListModalVisible, setIsEmptyListModalVisible] = useState(false);
@@ -20,12 +20,15 @@ export function Budget() {
     const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [packageToDelete, setPackageToDelete] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const budgetService = new BudgetService();
 
     useEffect(() => {
         fetch('https://raw.githubusercontent.com/CS-PI-2025-Delinquentes/json-end/refs/heads/main/cities.json')
             .then(res => res.json())
             .then(citiesData => {
-                setNormalizedCityList(citiesData.map((city) => normalize(city)));
+                setCityList(citiesData);
             });
     }, []);
 
@@ -43,7 +46,7 @@ export function Budget() {
         reset,
         formState: { errors, touchedFields, isValid }
     } = useForm({
-        resolver: zodResolver(generalSchema(normalizedCityList)),
+        resolver: zodResolver(generalSchema(cityList)),
         mode: "onBlur"
     });
 
@@ -77,7 +80,7 @@ export function Budget() {
         setPackageToDelete(null);
     };
 
-    const handleSubmitOrder = () => {
+    const handleSubmitOrder = async () => {
         const lastPackage = packages[packages.length - 1];
 
         const finalJson = {
@@ -88,16 +91,25 @@ export function Budget() {
                 height: pkg.height || 0,
                 length: pkg.length || 0,
                 weight: pkg.weight || 0,
-                loadType: pkg.loadType,
+                loadType: pkg.loadType?.toUpperCase(),
                 amount: pkg.amount || 1,
             })),
         };
 
-        console.log("JSON enviado:", finalJson);
-        localStorageUtils.setItem("finalBudget", finalJson);
-        setIsSuccessModalVisible(true);
-        setPackages([]);
-        reset();
+        try {
+            setIsSubmitting(true);
+            console.log("JSON enviado:", finalJson);
+            await budgetService.create(finalJson);
+            toast.success("Solicitação de orçamento enviada com sucesso!");
+            setIsSuccessModalVisible(true);
+            setPackages([]);
+            reset();
+        } catch (error) {
+            console.error("Erro ao enviar solicitação:", error);
+            toast.error(error.response?.data?.message || "Erro ao enviar solicitação de orçamento");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleAddPackage = (e) => {
@@ -124,9 +136,9 @@ export function Budget() {
         setIsConfirmationModalVisible(true);
     };
 
-    const handleConfirmSend = () => {
-        handleSubmitOrder();
+    const handleConfirmSend = async () => {
         setIsConfirmationModalVisible(false);
+        await handleSubmitOrder();
     };
 
     const resetPackageDimensions = () => {
@@ -266,12 +278,13 @@ export function Budget() {
                                         </ButtonText>
                                     </Button>
                                     <Button
-                                        className="bg-red-tx xs:col-span-2 md:col-span-1 md:row-start-2 md:col-start-2"
+                                        className={`xs:col-span-2 md:col-span-1 md:row-start-2 md:col-start-2 ${isSubmitting ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-tx cursor-pointer'}`}
                                         onClick={handleSend}
                                         type="button"
+                                        disabled={isSubmitting}
                                     >
                                         <ButtonText className="text-white text-center">
-                                            Enviar
+                                            {isSubmitting ? "Enviando..." : "Enviar"}
                                         </ButtonText>
                                     </Button>
                                     <Button
@@ -436,7 +449,7 @@ function AddressForm({ register, errors, touchedFields, watch, setValue, setErro
                     setValue(`${prefix}neighborhood`, data.bairro, { shouldTouch: true, shouldValidate: true });
                     setValue(`${prefix}city`, data.localidade, { shouldTouch: true, shouldValidate: true });
                     setValue(`${prefix}state`, data.uf, { shouldTouch: true, shouldValidate: true });
-                } catch (error) {
+                } catch {
                     setError(`${prefix}cep`, { type: "manual", message: "Erro ao buscar o CEP" });
                 }
             }
@@ -553,7 +566,7 @@ function MeasuresForms({ register, errors, touchedFields }) {
     )
 }
 
-function addressSchema(normalizedCityList) {
+function addressSchema(cityList) {
     return z.object({
         cep: z
             .string()
@@ -563,18 +576,16 @@ function addressSchema(normalizedCityList) {
         state: z
             .string()
             .nonempty("Campo obrigatório")
-            .transform(normalize)
             .refine(
-                (val) => ["parana", "pr"].includes(val),
+                (val) => ["Paraná", "PR", "parana", "pr"].includes(val),
                 { message: "Só atendemos o Paraná no momento." }
             ),
 
         city: z
             .string()
             .nonempty("Campo obrigatório")
-            .transform(normalize)
             .refine(
-                (val) => normalizedCityList.includes(val),
+                (val) => cityList.includes(val),
                 { message: "Cidade não atendida." }
             ),
 
@@ -592,10 +603,10 @@ function addressSchema(normalizedCityList) {
     });
 }
 
-function generalSchema(normalizedCityList) {
+function generalSchema(cityList) {
     return z.object({
-        origin: addressSchema(normalizedCityList),
-        destination: addressSchema(normalizedCityList),
+        origin: addressSchema(cityList),
+        destination: addressSchema(cityList),
         loadType: z
             .string()
             .nonempty("Selecione o tipo de carga"),
