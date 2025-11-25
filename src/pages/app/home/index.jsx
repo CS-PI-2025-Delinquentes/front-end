@@ -25,11 +25,13 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import UserService from "../../../services/UserService";
+import { Spinner } from "@/components/ui/spinner";
 
 export function Home() {
   const [showWhatsApp, setShowWhatsApp] = useState(false);
   const [userName, setUserName] = useState("");
   const [tipoConta, setTipoConta] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
 
   const toggleWhatsApp = () => setShowWhatsApp((prev) => !prev);
@@ -74,23 +76,26 @@ export function Home() {
 
   const getInfo = async () => {
     try {
+      
       const resposta = await userService.getInfo();
       console.log(resposta);
       if (resposta.status === 200) {
-        setUserName(resposta.data.nome || "Nome Generéico");
-        setTipoConta(resposta.data.tipoConta || "Pessoa Física");
-        sessionStorage.setItem("home", [resposta.data.nome, resposta.data.tipoConta]);
+        setUserName(resposta.data.name || "Nome Generéico");
+        setTipoConta(resposta.data.accountType || "Pessoa Física");
+        sessionStorage.setItem("home", JSON.stringify([resposta.data.name, resposta.data.accountType, resposta.data.cpfCnpj, resposta.data.email, resposta.data.phone]));
       }
     } catch (error) {
       toast.error("Erro ao buscar dados");
       console.log(error);
       setUserName("Error");
+    }finally {
+      setIsLoading(false); 
     }
   };
 
   useEffect(() => {
     getInfo();
-  }, [sessionStorage.getItem("home")]);
+  }, []);
 
   const reviewButtons = [
     {
@@ -121,6 +126,16 @@ export function Home() {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <SectionApp>
+        <div className="flex justify-center items-center h-screen">
+          <Spinner className="text-blue-500" />
+        </div>
+      </SectionApp>
+    );
+  }
 
   return (
     <SectionApp>

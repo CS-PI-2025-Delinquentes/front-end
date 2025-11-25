@@ -10,12 +10,12 @@ export function AppHeader({ screenTitle }: { screenTitle: string }) {
         <ArrowLeft className="text-black size-8 icon" />
       </Link>
       <h3 className="text-center flex-auto">{screenTitle}</h3>
-     <CustomTrigger/>
+      <CustomTrigger />
     </div>
   );
 }
 
 function CustomTrigger() {
   const { toggleSidebar } = useSidebar()
-  return <List onClick={toggleSidebar} className="icon md:hidden"/>
+  return <List onClick={toggleSidebar} className="icon md:hidden" />
 }

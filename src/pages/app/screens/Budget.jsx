@@ -21,6 +21,7 @@ export function Budget() {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [packageToDelete, setPackageToDelete] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [tab, setTab] = useState(1);
 
     const budgetService = new BudgetService();
 
@@ -82,6 +83,7 @@ export function Budget() {
 
     const handleSubmitOrder = async () => {
         const lastPackage = packages[packages.length - 1];
+        const observationValue = watch("observation");
 
         const finalJson = {
             addressOrigin: lastPackage.origin,
@@ -95,6 +97,10 @@ export function Budget() {
                 amount: pkg.amount || 1,
             })),
         };
+
+        if (observationValue && observationValue.trim()) {
+            finalJson.observation = observationValue.trim();
+        }
 
         try {
             setIsSubmitting(true);
@@ -162,41 +168,92 @@ export function Budget() {
         window.location.href = "/app/home";
     };
 
+    const handleBack = () => {
+        setTab(tab - 1);
+    }
+
+    const handleNext = () => {
+        setTab(tab + 1);
+    }
+
     return (
         <>
-            <SectionApp className="xl:grid grid-cols-2">
+            <SectionApp>
                 <AppHeader screenTitle="Orçamento" />
-                <p className="pb-4 grid col-span-2 pt-4">Preencha o formulário a seguir para solicitar um orçamento para seu frete.</p>
-                <form className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:col-span-2">
-                    <Shape className="border border-gray-600">
-                        <h4 className="pb-2">Endereço origem</h4>
-                        <AddressForm
-                            register={register}
-                            errors={errors.origin || {}}
-                            touchedFields={touchedFields.origin || {}}
-                            watch={watch}
-                            setValue={setValue}
-                            setError={setError}
-                            clearErrors={clearErrors}
-                            prefix="origin."
-                        />
-                    </Shape>
-                    <Shape className="border border-gray-600">
-                        <h4 className="pb-2">Endereço destino</h4>
-                        <AddressForm
-                            register={register}
-                            errors={errors.destination || {}}
-                            touchedFields={touchedFields.destination || {}}
-                            watch={watch}
-                            setValue={setValue}
-                            setError={setError}
-                            clearErrors={clearErrors}
-                            prefix="destination."
-                        />
-                    </Shape>
-                    <div className="col-span-2">
-                        <div className="grid gap-6 lg:grid lg:grid-cols-2 col-span-2">
-                            <div className="flex flex-col gap-4">
+                <p className="grid col-span-2 pt-4">Preencha o formulário a seguir para solicitar um orçamento para seu frete.</p>
+                <div className="flex gap-6 py-4 font-bold">
+                    <p
+                        className={`${tab === 1 ? 'border-b-3 border-red-tx' : ''}`}
+                    >
+                        Endereços
+                    </p>
+                    <p
+                        className={`${tab === 2 ? 'border-b-3 border-red-tx' : ''}`}
+                    >
+                        Carga
+                    </p>
+                    <p
+                        className={`${tab === 3 ? 'border-b-3 border-red-tx' : ''}`}
+                    >
+                        Revisão
+                    </p>
+                </div>
+                <form>
+                    <div data-tab={tab} className="hidden data-[tab=1]:grid gap-6">
+                        <Shape className="border border-gray-600">
+                            <h4 className="pb-2">Endereço origem</h4>
+                            <AddressForm
+                                register={register}
+                                errors={errors.origin || {}}
+                                touchedFields={touchedFields.origin || {}}
+                                watch={watch}
+                                setValue={setValue}
+                                setError={setError}
+                                clearErrors={clearErrors}
+                                prefix="origin."
+                            />
+                        </Shape>
+                        <Shape className="border border-gray-600">
+                            <h4 className="pb-2">Endereço destino</h4>
+                            <AddressForm
+                                register={register}
+                                errors={errors.destination || {}}
+                                touchedFields={touchedFields.destination || {}}
+                                watch={watch}
+                                setValue={setValue}
+                                setError={setError}
+                                clearErrors={clearErrors}
+                                prefix="destination."
+                            />
+                        </Shape>
+
+                        <div className="flex-col gap-4 lg:col-start-2">
+                            <div className="grid xs:grid-cols-2 gap-3 py-4 items-end xl:py-0">
+                                <Button
+                                    className="bg-gray-50"
+                                    onClick={handleCancel}
+                                    type="button"
+                                >
+                                    <ButtonText className="text-black text-center">
+                                        Cancelar
+                                    </ButtonText>
+                                </Button>
+
+                                <Button
+                                    className="bg-red-tx cursor-pointer"
+                                    onClick={handleNext}
+                                    type="button"
+                                >
+                                    <ButtonText className="text-white text-center">
+                                        Próximo
+                                    </ButtonText>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-tab={tab} className="hidden data-[tab=2]:block">
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <div>
                                 <Shape className="border border-gray-600">
                                     <h4 className="pb-2">Tipo da carga*</h4>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -216,69 +273,138 @@ export function Budget() {
                                             <p>Sacola</p>
                                         </label>
                                     </div>
-                                </Shape>
 
-                                <div className="hidden lg:block space-y-2">
-                                    <div className="flex gap-3">
-                                        <Info className="icon" />
-                                        <p>Todos os pacotes serão enviados para o mesmo endereço informado acima.</p>
+                                    <div className="py-4">
+                                        <p onClick={toggleDetails} className="cursor-pointer flex items-center ">
+                                            {showDetails ? <CaretDown className="icon" /> : <CaretRight className="icon" />}
+                                            Mais detalhes sobre a carga (opcional)
+                                        </p>
+
+                                        {showDetails && (
+                                            <div className="xl:col-span-3">
+                                                <h4 className="pb-2">Dimensões da carga</h4>
+                                                <div>
+                                                    <MeasuresForms
+                                                        register={register}
+                                                        errors={errors}
+                                                        touchedFields={touchedFields}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <Shape className="bg-gray-50">
-                                        <PackageList
-                                            packages={packages}
-                                            onIncrease={handleIncreaseAmount}
-                                            onDecrease={handleDecreaseAmount}
-                                        />
-                                    </Shape>
-                                </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2">
+                                        <Button
+                                            className="bg-blue-tx lg:col-start-2"
+                                            onClick={handleAddPackage}
+                                            type="button"
+                                        >
+                                            <ButtonText className="text-center text-white">
+                                                Adicionar pacote
+                                            </ButtonText>
+                                        </Button>
+                                    </div>
+                                </Shape>
                             </div>
 
-
-                            <div className="flex flex-col gap-4">
-                                <p onClick={toggleDetails} className="cursor-pointer flex items-center">
-                                    {showDetails ? <CaretDown className="icon" /> : <CaretRight className="icon" />}
-                                    Mais detalhes sobre a carga (opcional)
-                                </p>
-
-                                {showDetails && (
-                                    <Shape className="border border-gray-600 xl:col-span-3">
-                                        <h4 className="pb-2">Dimensões da carga</h4>
-                                        <div>
-                                            <MeasuresForms
-                                                register={register}
-                                                errors={errors}
-                                                touchedFields={touchedFields}
-                                            />
-                                        </div>
-                                    </Shape>
-                                )}
-
-                                <div className="space-y-2 lg:hidden">
-                                    <div className="flex gap-3">
-                                        <Info className="icon" />
-                                        <p>Todos os pacotes serão enviados para o mesmo endereço informado acima.</p>
-                                    </div>
-                                    <Shape className="bg-gray-50">
-                                        <PackageList
-                                            packages={packages}
-                                            onIncrease={handleIncreaseAmount}
-                                            onDecrease={handleDecreaseAmount}
-                                        />
-                                    </Shape>
+                            <div className="space-y-2">
+                                <div className="flex gap-3">
+                                    <Info className="icon" />
+                                    <p>Todos os pacotes serão enviados para o mesmo endereço informado acima.</p>
                                 </div>
+                                <Shape>
+                                    <PackageList
+                                        packages={packages}
+                                        onIncrease={handleIncreaseAmount}
+                                        onDecrease={handleDecreaseAmount}
+                                    />
+                                </Shape>
+                            </div>
 
-                                <div className="grid xs:grid-cols-2 gap-3 py-4 items-end xl:py-0 order-4">
+                            <div className="flex flex-col gap-4 lg:col-start-2">
+                                <div className="grid xs:grid-cols-2 gap-3 py-4 items-end xl:py-0">
                                     <Button
-                                        className="bg-blue-tx xs:col-span-2 md:row-start-1 md:col-start-1"
-                                        onClick={handleAddPackage}
+                                        className="bg-gray-50"
+                                        onClick={handleBack}
                                         type="button"
                                     >
-                                        <ButtonText className="text-center text-white">
-                                            Adicionar pacote
+                                        <ButtonText className="text-black text-center">
+                                            Voltar
                                         </ButtonText>
                                     </Button>
+
                                     <Button
-                                        className={`xs:col-span-2 md:col-span-1 md:row-start-2 md:col-start-2 ${isSubmitting ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-tx cursor-pointer'}`}
+                                        className="bg-red-tx cursor-pointer"
+                                        onClick={handleNext}
+                                        type="button"
+                                    >
+                                        <ButtonText className="text-white text-center">
+                                            Próximo
+                                        </ButtonText>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-tab={tab} className="hidden data-[tab=3]:block">
+                        <div className="grid lg:grid-cols-2 gap-6">
+                            <AdressList
+                                adress={{
+                                    cep: watch("origin.cep"),
+                                    estado: watch("origin.state"),
+                                    cidade: watch("origin.city"),
+                                    bairro: watch("origin.neighborhood"),
+                                    rua: watch("origin.street"),
+                                    numero: watch("origin.number"),
+                                }}
+                                title="Endereço de Origem"
+                            />
+
+                            <AdressList
+                                adress={{
+                                    cep: watch("destination.cep"),
+                                    estado: watch("destination.state"),
+                                    cidade: watch("destination.city"),
+                                    bairro: watch("destination.neighborhood"),
+                                    rua: watch("destination.street"),
+                                    numero: watch("destination.number"),
+                                }}
+                                title="Endereço de Destino"
+                            />
+
+                            <div className="py-2">
+                                <Shape>
+                                    <PackageListReview packages={packages} />
+                                </Shape>
+                            </div>
+
+                            <div>
+                                <Shape className="border border-gray-600">
+                                    <p className="pb-3 font-bold">Obervações (opcional)</p>
+                                    <InputRoot>
+                                        <InputField 
+                                            placeholder="Adicione mais detalhes sobre a entrega" 
+                                            {...register("observation")}
+                                        />
+                                    </InputRoot>
+                                </Shape>
+                            </div>
+
+                            <div className="flex flex-col gap-4 lg:col-start-2">
+                                <div className="grid xs:grid-cols-2 gap-3 py-4 items-end xl:py-0">
+                                    <Button
+                                        className="bg-gray-50"
+                                        onClick={handleBack}
+                                        type="button"
+                                    >
+                                        <ButtonText className="text-black text-center">
+                                            Voltar
+                                        </ButtonText>
+                                    </Button>
+
+                                    <Button
+                                        className={`${isSubmitting ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-tx cursor-pointer'}`}
                                         onClick={handleSend}
                                         type="button"
                                         disabled={isSubmitting}
@@ -287,21 +413,13 @@ export function Budget() {
                                             {isSubmitting ? "Enviando..." : "Enviar"}
                                         </ButtonText>
                                     </Button>
-                                    <Button
-                                        className="bg-gray-50 xs:col-span-2 md:col-span-1 md:row-start-2 md:col-start-1"
-                                        onClick={handleCancel}
-                                        type="button"
-                                    >
-                                        <ButtonText className="text-black text-center">
-                                            Cancelar
-                                        </ButtonText>
-                                    </Button>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </form>
-            </SectionApp>
+            </SectionApp >
 
             <ModalSm open={isAlertModalVisible} onClose={() => setIsAlertModalVisible(false)} >
                 <p className="mb-4 text-lg font-semibold">Preencha os campos obrigatórios!</p>
@@ -367,36 +485,53 @@ export function Budget() {
 }
 
 function PackageList({ packages, onIncrease, onDecrease }) {
+    if (packages.length === 0) {
+        return <p className="text-gray-600 text-center">Nenhum pacote adicionado</p>;
+    }
+
     return (
-        <div className="flex flex-col gap-2">
-            {packages.length === 0 ? (
-                <p className="text-gray-600 text-center">Nenhum pacote adicionado</p>
-            ) : (
-                packages.map((pkg, index) => (
-                    <div key={index} className="flex gap-3 justify-between">
-                        <div className="flex gap-2">
-                            {pkg.loadType === "caixa" && <Package className="icon" />}
-                            {pkg.loadType === "envelope" && <File className="icon" />}
-                            {pkg.loadType === "sacola" && <ToteSimple className="icon" />}
-                            <p className="capitalize">{pkg.loadType}</p>
-                            <p>{`${pkg.width || 0}x${pkg.height || 0}x${pkg.length || 0}cm    ${pkg.weight || 0}kg`}</p>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                            <Minus
-                                className="cursor-pointer"
-                                size={20}
-                                onClick={() => onDecrease(index)}
-                            />
-                            <p>{pkg.amount || 1}</p>
-                            <Plus
-                                className="cursor-pointer"
-                                size={20}
-                                onClick={() => onIncrease(index)}
-                            />
+        <div className="flex flex-col">
+            <div className="flex gap-x-4 pb-2 mb-2 border-b-2 border-gray-300 font-bold">
+                <span className="flex-1">Tipo</span>
+                <span className="flex-1">Dimensões</span>
+                <span className="w-20 text-center">Qtd</span>
+            </div>
+            
+            {packages.map((pkg, index) => (
+                <div
+                    key={index}
+                    className="flex gap-x-4 py-2 border-b border-gray-100 items-center"
+                >
+                    <div className="flex-1 flex items-center gap-2">
+                        {pkg.loadType === "caixa" && <Package size={20} />}
+                        {pkg.loadType === "envelope" && <File size={20} />}
+                        {pkg.loadType === "sacola" && <ToteSimple size={20} />}
+                        <span className="capitalize">{pkg.loadType}</span>
+                    </div>
+                    
+                    <div className="flex-1">
+                        <div className="text-sm">
+                            <span>{`${pkg.width || 0}x${pkg.height || 0}x${pkg.length || 0}cm`}</span>
+                            <br />
+                            <span>{`${pkg.weight || 0}kg`}</span>
                         </div>
                     </div>
-                ))
-            )}
+                    
+                    <div className="w-20 flex items-center justify-center gap-2">
+                        <Minus
+                            className="cursor-pointer"
+                            size={16}
+                            onClick={() => onDecrease(index)}
+                        />
+                        <span className="min-w-[20px] text-center">{pkg.amount || 1}</span>
+                        <Plus
+                            className="cursor-pointer"
+                            size={16}
+                            onClick={() => onIncrease(index)}
+                        />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
@@ -521,7 +656,7 @@ function MeasuresForms({ register, errors, touchedFields }) {
                     <FormField
                         register={register}
                         name="width"
-                        title="Largura (cm)"
+                        title="Largura"
                         placeholder="cm"
                         error={errors.width}
                         dirty={touchedFields.width}
@@ -532,7 +667,7 @@ function MeasuresForms({ register, errors, touchedFields }) {
                     <FormField
                         register={register}
                         name="height"
-                        title="Altura (cm)"
+                        title="Altura"
                         placeholder="cm"
                         error={errors.height}
                         dirty={touchedFields.height}
@@ -543,7 +678,7 @@ function MeasuresForms({ register, errors, touchedFields }) {
                     <FormField
                         register={register}
                         name="length"
-                        title="Comprimento (cm)"
+                        title="Comprimento"
                         placeholder="cm"
                         error={errors.length}
                         dirty={touchedFields.length}
@@ -554,7 +689,7 @@ function MeasuresForms({ register, errors, touchedFields }) {
                     <FormField
                         register={register}
                         name="weight"
-                        title="Peso (kg)"
+                        title="Peso"
                         placeholder="kg"
                         error={errors.weight}
                         dirty={touchedFields.weight}
@@ -630,6 +765,9 @@ function generalSchema(cityList) {
             .optional()
             .transform((val) => (val ? Number(val.replace(",", ".")) : undefined))
             .refine((val) => val === undefined || (!isNaN(val) && val > 0), { message: "Informe um número válido" }),
+        observation: z
+            .string()
+            .optional(),
     });
 }
 
@@ -645,4 +783,71 @@ function maskInput(value, field) {
     }
 
     return value;
+}
+
+function AdressList({ adress, title }) {
+    const labels = ["CEP", "Estado", "Cidade", "Bairro", "Rua", "Número"];
+
+    const addressValues = [
+        adress?.cep || '',
+        adress?.estado || adress?.state || '',
+        adress?.cidade || adress?.city || '',
+        adress?.bairro || adress?.neighborhood || '',
+        adress?.rua || adress?.street || '',
+        adress?.numero || adress?.number || ''
+    ];
+
+    return (
+        <Shape className="border-gray-600 border-1 sm:pt-2 sm:pb-5 sm:pl-4 lg:mt-0">
+            <span className="text-lg font-bold">{title}</span>
+            {labels.map((label, index) => (
+                <div className="flex flex-col mt-3" key={index}>
+                    <span className="sm:text-xs font-bold">{label}</span>
+                    <span className="text-base">{addressValues[index]}</span>
+                </div>
+            ))}
+        </Shape>
+    );
+}
+
+function PackageListReview({ packages }) {
+    if (packages.length === 0) {
+        return <p className="text-gray-600 text-center">Nenhum pacote adicionado</p>;
+    }
+
+    return (
+        <div className="flex flex-col">
+            <div className="flex gap-x-4 pb-2 mb-2 border-b-2 border-gray-300 font-bold">
+                <span className="flex-1">Tipo</span>
+                <span className="flex-1">Dimensões</span>
+                <span className="w-16 text-center">Qtd</span>
+            </div>
+
+            {packages.map((pkg, index) => (
+                <div
+                    key={index}
+                    className="flex gap-x-4 py-2 border-b border-gray-100 items-center"
+                >
+                    <div className="flex-1 flex items-center gap-2">
+                        {pkg.loadType === "caixa" && <Package size={20} />}
+                        {pkg.loadType === "envelope" && <File size={20} />}
+                        {pkg.loadType === "sacola" && <ToteSimple size={20} />}
+                        <span className="capitalize">{pkg.loadType}</span>
+                    </div>
+
+                    <div className="flex-1">
+                        <div className="text-sm">
+                            <span>{`${pkg.width || 0}x${pkg.height || 0}x${pkg.length || 0}cm`}</span>
+                            <br />
+                            <span>{`${pkg.weight || 0}kg`}</span>
+                        </div>
+                    </div>
+
+                    <div className="w-16 text-center">
+                        <span>{pkg.amount || 1}</span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }

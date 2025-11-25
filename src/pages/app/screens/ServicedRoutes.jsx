@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/table";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+
 import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "phosphor-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,6 +27,8 @@ import RouteService from "../../../services/RouteService";
 import { toast, Toaster } from "sonner";
 
 export function ServicedRoutes() {
+
+
   return (
     <>
       <SectionApp>
@@ -128,6 +132,14 @@ function RoutesDataTable() {
       pageCount: totalPages,
     },
   });
+
+    if (loading) {
+    return (
+      <div className="flex justify-center items-center h-72">
+        <Spinner className="text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full pt-5">

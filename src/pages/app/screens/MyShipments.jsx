@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button"
 import { X, ArrowLeft, ArrowRight } from "phosphor-react";
 import { useIsMobile } from "@/hooks/use-mobile"
 import BudgetService from "../../../services/BudgetService";
+import { Spinner } from "@/components/ui/spinner";
+
 
 export function MyShipments() {
   return (
@@ -128,6 +130,9 @@ function DataTableDemo() {
 
   const loadShipments = async (page) => {
     setLoading(true);
+
+    
+
     try {
       const response = await budgetService.findAllClient(page);
       const shipments = response.data.content || [];
@@ -207,76 +212,69 @@ function DataTableDemo() {
         pageSize: 10,
       },
     },
-    initialState: {
-      sorting: [
-        {
-          id: 'data',
-          desc: true,
-        },
-      ],
-    },
   });
 
-  if (loading) {
-    return (
-      <div className="w-full pt-5">
-        <div className="text-center text-gray-600">
-          Carregando solicitações...
+      if (loading) {
+      return (
+        <div className="flex justify-center items-center h-72">
+          <Spinner className="text-blue-500" />
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   return (
     <div className="w-full pt-5">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <TableHead key={header.id} className="text-center font-bold">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map(row => (
-                <TableRow className="text-center"
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+      <div className="rounded-md border flex items-center justify-center">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <TableHead key={header.id} className="text-center font-bold">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhuma solicitação encontrada.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map(row => (
+                  <TableRow className="text-center"
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    Nenhuma solicitação encontrada.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        
+
       </div>
 
-      {/* Paginação customizada */}
-      {totalPages > 1 && (
+      {/* Paginação */}
+      {!loading && totalPages > 1 && (
         <div className="flex items-center justify-end space-x-2 py-4">
           <Button
             onClick={() => goToPage(currentPage - 1)}
@@ -286,9 +284,11 @@ function DataTableDemo() {
           >
             <ArrowLeft className="icon" />
           </Button>
+
           <span className="text-sm text-gray-600 mx-2">
             {currentPage + 1} de {totalPages}
           </span>
+
           <Button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= totalPages - 1}
